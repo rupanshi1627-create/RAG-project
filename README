@@ -1,0 +1,59 @@
+# Enterprise Document RAG & Search Assistant
+A Retrieval-Augmented Generation (RAG) system that answers natural-language 
+questions about a document by retrieving relevant context and generating 
+grounded answers — reducing hallucination compared to relying on an LLM's memory alone.
+
+## How RAG Works — 5 Components
+
+1. **Document Loading** — Extracts raw text from the source document 
+   (PDF/DOCX) using a document loader.
+
+#code
+loader = Docx2txtLoader("/content/Rupanshi_AI_Engineer_Resume.docx")
+documents = loader.load()
+
+#code
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+chunks = text_splitter.split_documents(documents)
+
+2. **Chunking** — Splits the text into smaller overlapping pieces. This is 
+   needed because embedding models and LLMs have a limited context window, 
+   and smaller chunks improve retrieval precision (matching the exact 
+   relevant section instead of an entire document).
+
+#code
+embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+
+3. **Embedding** — Converts each chunk into a numerical vector that 
+   represents its meaning. Chunks with similar meaning end up close to 
+   each other mathematically, which is what makes similarity search possible.
+
+#code
+vector_store = FAISS.from_documents(chunks, embedding_model)
+retriever = vector_store.as_retriever(search_kwargs={"k": 3})
+docs = retriever.invoke("What are the technical skills?")
+
+4. **Storage & Retrieval** — Embeddings are stored in a vector database 
+   (FAISS). When a query comes in, it's also converted into an embedding, 
+   and FAISS returns the top-k most similar chunks.
+
+#code
+context = "\n\n".join([doc.page_content for doc in docs])  # 3 added 3 chunks
+formatted_prompt = prompt.format(context=context, question=question)
+response = llm.invoke(formatted_prompt)
+
+5. **Generation** — The retrieved chunks + the original query are combined 
+   into a prompt and sent to an LLM (Groq — openai/gpt-oss-20b), which 
+   generates the final answer grounded in the retrieved context.
+
+## Tech Stack
+- LangChain (orchestration)
+- FAISS (vector database)
+- HuggingFace sentence-transformers (embeddings)
+- Groq API (LLM inference)
+- Google Colab (development environment)
+
+## Evaluation
+Manually tested with multiple questions and verified that:
+- Retrieved chunks were relevant to the query (retrieval accuracy)
+- Generated answers were grounded in the retrieved context, not fabricated (faithfulness)
