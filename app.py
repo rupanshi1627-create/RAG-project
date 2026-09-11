@@ -7,7 +7,7 @@ from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 import tempfile
 
-st.set_page_config(page_title="Document RAG Assistant", page_icon="📄")
+st.set_page_config(page_title="Document RAG Assistant 🌼", page_icon="🌼")
 st.title("📄 Document RAG Assistant")
 st.write("Upload a document (PDF or DOCX) and ask questions — including follow-ups!")
 
